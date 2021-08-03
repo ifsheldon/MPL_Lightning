@@ -5,6 +5,28 @@ import pytorch_lightning as pl
 from torch import optim
 from torch import nn
 from .aux_modules import SmoothCrossEntropy
+import math
+from torch.optim.lr_scheduler import LambdaLR
+
+
+def get_cosine_schedule_with_warmup(optimizer,
+                                    num_warmup_steps,
+                                    num_training_steps,
+                                    num_wait_steps=0,
+                                    num_cycles=0.5,
+                                    last_epoch=-1):
+    def lr_lambda(current_step):
+        if current_step < num_wait_steps:
+            return 0.0
+
+        if current_step < num_warmup_steps + num_wait_steps:
+            return float(current_step) / float(max(1, num_warmup_steps + num_wait_steps))
+
+        progress = float(current_step - num_warmup_steps - num_wait_steps) / \
+                   float(max(1, num_training_steps - num_warmup_steps - num_wait_steps))
+        return max(0.0, 0.5 * (1.0 + math.cos(math.pi * float(num_cycles) * 2.0 * progress)))
+
+    return LambdaLR(optimizer, lr_lambda, last_epoch)
 
 
 class LightningMPL(pl.LightningModule):
@@ -25,6 +47,9 @@ class LightningMPL(pl.LightningModule):
                  lambda_u=1.0,
                  uda_steps=1,
                  label_smoothing=0,
+                 warm_up_steps=0,
+                 total_steps=300000,
+                 student_wait_steps=0
                  ):
         """
         Init MPL
@@ -44,6 +69,9 @@ class LightningMPL(pl.LightningModule):
         :param lambda_u: coefficient of unlabeled loss
         :param uda_steps: warmup steps of lambda-u
         :param label_smoothing: label smoothing alpha
+        :param warm_up_steps: warmup steps
+        :param total_steps: number of total steps to run
+        :param student_wait_steps: student warmup steps
         """
         super(LightningMPL, self).__init__()
         self.save_hyperparameters()
@@ -91,11 +119,18 @@ class LightningMPL(pl.LightningModule):
                                 lr=self.hparams.teacher_lr,
                                 momentum=self.hparams.momentum,
                                 nesterov=self.hparams.enable_nesterov)
+        t_scheduler = get_cosine_schedule_with_warmup(t_optimizer, self.hparams.warmup_steps,
+                                                      self.hparams.total_steps)
         s_optimizer = optim.SGD(student_parameters,
                                 lr=self.hparams.student_lr,
                                 momentum=self.hparams.momentum,
                                 nesterov=self.hparams.enable_nesterov)
-        return [t_optimizer, s_optimizer]
+        s_scheduler = get_cosine_schedule_with_warmup(s_optimizer,
+                                                      self.hparams.warmup_steps,
+                                                      self.hparams.total_steps,
+                                                      num_wait_steps=self.hparams.student_wait_steps)
+        return ({"optimizer": t_optimizer, "scheduler": t_scheduler},
+                {"optimizer": s_optimizer, "scheduler": s_scheduler})
 
     def forward(self, image_batch):
         return self.student(image_batch)
