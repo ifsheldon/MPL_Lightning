@@ -1,5 +1,4 @@
-from typing import Callable
-
+from .aux_modules import WideResNet
 import torch
 import torch.nn.functional as F
 import pytorch_lightning as pl
@@ -10,6 +9,12 @@ from .aux_modules import SmoothCrossEntropy
 
 class LightningMPL(pl.LightningModule):
     def __init__(self,
+                 num_classes,
+                 depth,
+                 widen_factor,
+                 dropout=0.,
+                 teacher_dropout=0.,
+                 student_dropout=0.,
                  teacher_lr=0.01,
                  student_lr=0.01,
                  weight_decay=0.0,
@@ -23,6 +28,12 @@ class LightningMPL(pl.LightningModule):
                  ):
         """
         Init MPL
+        :param num_classes: number of classes
+        :param depth: model depth
+        :param widen_factor: widen factor of WideResNet
+        :param dropout: per-layer dropout
+        :param teacher_dropout: dropout on last dense layer of teacher
+        :param student_dropout: dropout on last dense layer of student
         :param teacher_lr: teacher training learning rate
         :param student_lr: student training learning rate
         :param weight_decay: weight decay
@@ -36,8 +47,16 @@ class LightningMPL(pl.LightningModule):
         """
         super(LightningMPL, self).__init__()
         self.save_hyperparameters()
-        self.teacher = None  # FIXME
-        self.student = None  # FIXME
+        self.teacher = WideResNet(num_classes=num_classes,
+                                  depth=depth,
+                                  widen_factor=widen_factor,
+                                  dropout=dropout,
+                                  dense_dropout=teacher_dropout)
+        self.student = WideResNet(num_classes=num_classes,
+                                  depth=depth,
+                                  widen_factor=widen_factor,
+                                  dropout=dropout,
+                                  dense_dropout=student_dropout)
         self.criterion = self.create_loss_fn()
         # activate manual optimization
         self.automatic_optimization = False
