@@ -7,6 +7,7 @@ from torch import nn
 from .aux_modules import SmoothCrossEntropy
 import math
 from torch.optim.lr_scheduler import LambdaLR
+from argparse import ArgumentParser
 
 
 def get_cosine_schedule_with_warmup(optimizer,
@@ -30,6 +31,25 @@ def get_cosine_schedule_with_warmup(optimizer,
 
 
 class LightningMPL(pl.LightningModule):
+    @staticmethod
+    def add_model_specific_args(parent_parser: ArgumentParser):
+        parser = parent_parser.add_argument_group("LightningMPL")
+        parser.add_argument('--num-classes', default=10, type=int, help='number of classes')
+        parser.add_argument('--teacher-dropout', default=0, type=float, help='dropout on last dense layer')
+        parser.add_argument('--student-dropout', default=0, type=float, help='dropout on last dense layer')
+        parser.add_argument('--teacher_lr', default=0.01, type=float, help='train learning rate')
+        parser.add_argument('--student_lr', default=0.01, type=float, help='train learning rate')
+        parser.add_argument('--momentum', default=0.9, type=float, help='SGD Momentum')
+        parser.add_argument('--enable-nesterov', action='store_true', help='use nesterov')
+        parser.add_argument('--weight-decay', default=0, type=float, help='train weight decay')
+        parser.add_argument('--temperature', default=1, type=float, help='pseudo label temperature')
+        parser.add_argument('--threshold', default=0.95, type=float, help='pseudo label threshold')
+        parser.add_argument('--lambda-u', default=1, type=float, help='coefficient of unlabeled loss')
+        parser.add_argument('--warmup-steps', default=0, type=int, help='warmup steps')
+        parser.add_argument('--total-steps', default=300000, type=int, help='number of total steps to run')
+        parser.add_argument('--student-wait-steps', default=0, type=int, help='warmup steps')
+        return parent_parser
+
     def __init__(self,
                  num_classes,
                  depth,
