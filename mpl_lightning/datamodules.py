@@ -67,11 +67,11 @@ class CIFAR10SSL_DM(pl.LightningDataModule):
                  unlabeled_batch_size,
                  resize,
                  num_labeled,
-                 num_classes,
                  expand_labels,
                  eval_step,
                  rand_aug,
-                 workers
+                 workers,
+                 num_classes=10
                  ):
         super(CIFAR10SSL_DM, self).__init__()
         self.save_hyperparameters()
@@ -145,11 +145,11 @@ class CIFAR100SSL_DM(pl.LightningDataModule):
                  unlabeled_batch_size,
                  resize,
                  num_labeled,
-                 num_classes,
                  expand_labels,
                  eval_step,
                  rand_aug,
-                 workers
+                 workers,
+                 num_classes=100
                  ):
         super(CIFAR100SSL_DM, self).__init__()
         self.save_hyperparameters()
