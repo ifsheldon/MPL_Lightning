@@ -1,36 +1,6 @@
 import numpy as np
 from PIL import Image
 from torchvision import datasets
-from torchvision import transforms
-from .augmentation import RandAugment
-
-
-class TransformMPL(object):
-    def __init__(self, args, mean, std):
-        if args.randaug:
-            n, m = args.randaug
-        else:
-            n, m = 2, 10  # default
-
-        self.ori = transforms.Compose([
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomCrop(size=args.resize,
-                                  padding=int(args.resize * 0.125),
-                                  padding_mode='reflect')])
-        self.aug = transforms.Compose([
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomCrop(size=args.resize,
-                                  padding=int(args.resize * 0.125),
-                                  padding_mode='reflect'),
-            RandAugment(n=n, m=m)])
-        self.normalize = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(mean=mean, std=std)])
-
-    def __call__(self, x):
-        ori = self.ori(x)
-        aug = self.aug(x)
-        return self.normalize(ori), self.normalize(aug)
 
 
 class CIFAR10SSL(datasets.CIFAR10):
