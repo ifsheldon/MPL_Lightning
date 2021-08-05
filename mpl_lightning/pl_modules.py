@@ -157,7 +157,9 @@ class LightningMPL(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         opt_teacher, opt_student = self.optimizers()
-        images_labeled, targets, images_unlabeled_weak_aug, images_unlabeled_strong_aug = batch  # FIXME: fix this according to dataset
+        images_labeled, targets = batch["labeled"]
+        (images_unlabeled_weak_aug, images_unlabeled_strong_aug), _target = batch["unlabeled"]
+        targets = targets.long()
         labeled_data_batch_size = images_labeled.shape[0]
         unlabeled_data_batch_size = images_unlabeled_weak_aug.shape[0]
         t_all_images = torch.cat([images_labeled, images_unlabeled_weak_aug, images_unlabeled_strong_aug])
