@@ -1,11 +1,11 @@
 # MPL_Lightning
 Lightning implementation of Meta Pseudo Label
 
-The current working branch is `draft`.
+The current working branch is `dev`.
 
 
 ## TODOs
 * Check if the following components need modifications to be adapted to Lightning
-  * `ModelEMA`
   * loss scaling with `amp`
 * Fix `FIXME`s
+* `ModelEMA`
