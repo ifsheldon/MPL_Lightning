@@ -67,7 +67,7 @@ class LightningMPL(pl.LightningModule):
                  lambda_u=1.0,
                  uda_steps=1,
                  label_smoothing=0,
-                 warm_up_steps=0,
+                 warmup_steps=0,
                  total_steps=300000,
                  student_wait_steps=0
                  ):
@@ -89,7 +89,7 @@ class LightningMPL(pl.LightningModule):
         :param lambda_u: coefficient of unlabeled loss
         :param uda_steps: warmup steps of lambda-u
         :param label_smoothing: label smoothing alpha
-        :param warm_up_steps: warmup steps
+        :param warmup_steps: warmup steps
         :param total_steps: number of total steps to run
         :param student_wait_steps: student warmup steps
         """
