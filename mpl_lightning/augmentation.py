@@ -15,7 +15,7 @@ from PIL import Image
 logger = logging.getLogger(__name__)
 
 PARAMETER_MAX = 10
-RESAMPLE_MODE = None
+RESAMPLE_MODE = PIL.Image.BILINEAR
 
 
 def AutoContrast(img, **kwarg):
@@ -193,11 +193,9 @@ def rand_augment_pool():
 
 
 class RandAugment(object):
-    def __init__(self, n, m, resample_mode=PIL.Image.BILINEAR):
+    def __init__(self, n, m):
         assert n >= 1
         assert m >= 1
-        global RESAMPLE_MODE
-        RESAMPLE_MODE = resample_mode
         self.n = n
         self.m = m
         self.augment_pool = rand_augment_pool()
