@@ -30,6 +30,19 @@ def get_cosine_schedule_with_warmup(optimizer,
     return LambdaLR(optimizer, lr_lambda, last_epoch)
 
 
+def accuracy(output, target, top_k=(1,)):
+    max_k = max(top_k)
+    batch_size = target.shape[0]
+    _, idx = output.sort(dim=1, descending=True)
+    pred = idx.narrow(1, 0, max_k).t()
+    correct = pred.eq(target.reshape(1, -1).expand_as(pred))
+    res = []
+    for k in top_k:
+        correct_k = correct[:k].reshape(-1).float().sum(dim=0, keepdim=True)
+        res.append(correct_k.mul_(100.0 / batch_size))
+    return res
+
+
 class LightningMPL(pl.LightningModule):
     @staticmethod
     def add_model_specific_args(parent_parser: ArgumentParser):
@@ -163,6 +176,7 @@ class LightningMPL(pl.LightningModule):
     def forward(self, image_batch):
         return self.avg_student_model(image_batch) if self.enable_student_ema else self.student(image_batch)
 
+    # TODO: add metrics
     def training_step(self, batch, batch_idx):
         opt_teacher, opt_student = self.optimizers()
         images_labeled, targets = batch["labeled"]
@@ -215,3 +229,21 @@ class LightningMPL(pl.LightningModule):
     def training_step_end(self, _):
         if self.enable_student_ema:
             self.avg_student_model.update_parameters(self.student)
+
+    # TODO: add metrics
+    def validation_step(self, batch, batch_idx):
+        eval_model = self.avg_student_model if self.enable_student_ema else self.student
+        imgs, targets = batch
+        pred = eval_model(imgs)
+        loss = self.criterion(pred, targets)
+        acc = accuracy(pred, targets, (1, 5))
+        return loss
+
+    # TODO: add metrics
+    def test_step(self, batch, batch_idx):
+        test_model = self.avg_student_model if self.enable_student_ema else self.student
+        imgs, targets = batch
+        pred = test_model(imgs)
+        loss = self.criterion(pred, targets)
+        acc = accuracy(pred, targets, (1, 5))
+        return loss
