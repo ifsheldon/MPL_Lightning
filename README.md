@@ -8,4 +8,3 @@ The current working branch is `dev`.
 * Check if the following components need modifications to be adapted to Lightning
   * loss scaling with `amp`
 * Fix `FIXME`s
-* `ModelEMA`
