@@ -8,5 +8,4 @@ The current working branch is `draft`.
 * Check if the following components need modifications to be adapted to Lightning
   * `ModelEMA`
   * loss scaling with `amp`
-* Adapt datasets
 * Fix `FIXME`s
