@@ -71,7 +71,7 @@ class CIFAR10SSL_DM(pl.LightningDataModule):
                  eval_step,
                  rand_aug,
                  workers,
-                 num_classes=10
+                 num_classes_dm=10
                  ):
         super(CIFAR10SSL_DM, self).__init__()
         self.save_hyperparameters()
@@ -92,7 +92,7 @@ class CIFAR10SSL_DM(pl.LightningDataModule):
             ])
             train_labeled_indices, train_unlabeled_indices = x_u_split(base_dataset.targets,
                                                                        self.hparams.num_labeled,
-                                                                       self.hparams.num_classes,
+                                                                       self.hparams.num_classes_dm,
                                                                        self.hparams.expand_labels,
                                                                        self.hparams.labeled_batch_size,
                                                                        self.hparams.eval_step)
@@ -149,7 +149,7 @@ class CIFAR100SSL_DM(pl.LightningDataModule):
                  eval_step,
                  rand_aug,
                  workers,
-                 num_classes=100
+                 num_classes_dm=100
                  ):
         super(CIFAR100SSL_DM, self).__init__()
         self.save_hyperparameters()
@@ -170,7 +170,7 @@ class CIFAR100SSL_DM(pl.LightningDataModule):
             ])
             train_labeled_indices, train_unlabeled_indices = x_u_split(base_dataset.targets,
                                                                        self.hparams.num_labeled,
-                                                                       self.hparams.num_classes,
+                                                                       self.hparams.num_classes_dm,
                                                                        self.hparams.expand_labels,
                                                                        self.hparams.labeled_batch_size,
                                                                        self.hparams.eval_step)
