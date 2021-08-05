@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 from torch import optim
 from torch import nn
-from .aux_modules import SmoothCrossEntropy
+from .aux_modules import SmoothCrossEntropy, ModelEMA
 import math
 from torch.optim.lr_scheduler import LambdaLR
 from argparse import ArgumentParser
@@ -48,6 +48,7 @@ class LightningMPL(pl.LightningModule):
         parser.add_argument('--warmup-steps', default=0, type=int, help='warmup steps')
         parser.add_argument('--total-steps', default=300000, type=int, help='number of total steps to run')
         parser.add_argument('--student-wait-steps', default=0, type=int, help='warmup steps')
+        parser.add_argument('--ema', default=0.0, type=float, help="EMA decay rate")
         return parent_parser
 
     def __init__(self,
@@ -69,7 +70,8 @@ class LightningMPL(pl.LightningModule):
                  label_smoothing=0,
                  warmup_steps=0,
                  total_steps=300000,
-                 student_wait_steps=0
+                 student_wait_steps=0,
+                 ema=0.0
                  ):
         """
         Init MPL
@@ -92,6 +94,7 @@ class LightningMPL(pl.LightningModule):
         :param warmup_steps: warmup steps
         :param total_steps: number of total steps to run
         :param student_wait_steps: student warmup steps
+        :param ema: EMA decay rate of weight average of student
         """
         super(LightningMPL, self).__init__()
         self.save_hyperparameters()
@@ -105,6 +108,11 @@ class LightningMPL(pl.LightningModule):
                                   widen_factor=widen_factor,
                                   dropout=dropout,
                                   dense_dropout=student_dropout)
+        self.enable_student_ema = ema > 0.0
+        if self.enable_student_ema:
+            self.avg_student_model = ModelEMA(self.student, ema)
+        else:
+            self.avg_student_model = None
         self.criterion = self.create_loss_fn()
         # activate manual optimization
         self.automatic_optimization = False
@@ -203,3 +211,7 @@ class LightningMPL(pl.LightningModule):
         opt_teacher.zero_grad()
         self.manual_backward(t_loss)
         opt_teacher.step()
+
+    def training_step_end(self, _):
+        if self.enable_student_ema:
+            self.avg_student_model.update_parameters(self.student)
