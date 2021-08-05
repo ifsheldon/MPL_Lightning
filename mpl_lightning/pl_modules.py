@@ -162,10 +162,11 @@ class LightningMPL(pl.LightningModule):
         unlabeled_data_batch_size = images_unlabeled_weak_aug.shape[0]
         t_all_images = torch.cat([images_labeled, images_unlabeled_weak_aug, images_unlabeled_strong_aug])
         t_all_predictions = self.teacher(t_all_images)
-        t_pred_labeled, t_pred_unlabeled_weak_aug, t_pred_unlabeled_strong_aug = torch.chunk(t_all_predictions,
+        t_pred_labeled, t_pred_unlabeled_weak_aug, t_pred_unlabeled_strong_aug = torch.split(t_all_predictions,
                                                                                              [labeled_data_batch_size,
-                                                                                              labeled_data_batch_size +
-                                                                                              unlabeled_data_batch_size])
+                                                                                              unlabeled_data_batch_size,
+                                                                                              unlabeled_data_batch_size],
+                                                                                             dim=0)
         t_loss_labeled = self.criterion(t_pred_labeled, targets)
         soft_pseudo_label = torch.softmax(t_pred_unlabeled_weak_aug.detach() / self.hparams.temperature, dim=-1)
         max_probs, hard_pseudo_label = torch.max(soft_pseudo_label, dim=-1)
@@ -180,7 +181,8 @@ class LightningMPL(pl.LightningModule):
 
         s_all_images = torch.cat([images_labeled, images_unlabeled_strong_aug])
         s_all_predictions = self.student(s_all_images)
-        s_pred_labeled, s_pred_unlabeled_strong_aug = torch.chunk(s_all_predictions, labeled_data_batch_size)
+        s_pred_labeled, s_pred_unlabeled_strong_aug = torch.split(s_all_predictions,
+                                                                  [labeled_data_batch_size, unlabeled_data_batch_size])
 
         s_loss_labeled_old = F.cross_entropy(s_pred_labeled.detach(), targets)
         s_loss = self.criterion(s_pred_unlabeled_strong_aug, hard_pseudo_label)
