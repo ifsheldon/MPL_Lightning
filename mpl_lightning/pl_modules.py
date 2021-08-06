@@ -59,6 +59,8 @@ class LightningMPL(pl.LightningModule):
         parser.add_argument('--temperature', default=1, type=float, help='pseudo label temperature')
         parser.add_argument('--threshold', default=0.95, type=float, help='pseudo label threshold')
         parser.add_argument('--lambda-u', default=1, type=float, help='coefficient of unlabeled loss')
+        parser.add_argument('--uda-steps', default=1, type=float, help='warmup steps of lambda-u')
+        parser.add_argument('--label-smoothing', default=0, type=float, help='label smoothing alpha')
         parser.add_argument('--warmup-steps', default=0, type=int, help='warmup steps')
         parser.add_argument('--total-steps', default=300000, type=int, help='number of total steps to run')
         parser.add_argument('--student-wait-steps', default=0, type=int, help='warmup steps')
