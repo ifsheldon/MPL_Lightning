@@ -239,9 +239,9 @@ class LightningMPL(pl.LightningModule):
         opt_teacher.step()
 
         return {
-            "teacher_loss": t_loss,
-            "student_loss": s_loss,
-            "s_pred_labeled": s_pred_labeled_new,
+            "teacher_loss": t_loss.detach(),
+            "student_loss": s_loss.detach(),
+            "s_pred_labeled": s_pred_labeled_new.detach(),
             "targets": targets
         }
 
