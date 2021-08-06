@@ -71,30 +71,29 @@ class LightningMPL(pl.LightningModule):
                  num_classes,
                  depth,
                  widen_factor,
+                 teacher_dropout,
+                 student_dropout,
+                 teacher_lr,
+                 student_lr,
+                 weight_decay,
+                 enable_nesterov,
+                 momentum,
+                 temperature,
+                 threshold,
+                 lambda_u,
+                 uda_steps,
+                 label_smoothing,
+                 warmup_steps,
+                 total_steps,
+                 student_wait_steps,
+                 ema,
                  dropout=0.,
-                 teacher_dropout=0.,
-                 student_dropout=0.,
-                 teacher_lr=0.01,
-                 student_lr=0.01,
-                 weight_decay=0.0,
-                 enable_nesterov=True,
-                 momentum=0.9,
-                 temperature=1.0,
-                 threshold=0.95,
-                 lambda_u=1.0,
-                 uda_steps=1,
-                 label_smoothing=0,
-                 warmup_steps=0,
-                 total_steps=300000,
-                 student_wait_steps=0,
-                 ema=0.0
                  ):
         """
         Init MPL
         :param num_classes: number of classes
         :param depth: model depth
         :param widen_factor: widen factor of WideResNet
-        :param dropout: per-layer dropout
         :param teacher_dropout: dropout on last dense layer of teacher
         :param student_dropout: dropout on last dense layer of student
         :param teacher_lr: teacher training learning rate
@@ -111,6 +110,7 @@ class LightningMPL(pl.LightningModule):
         :param total_steps: number of total steps to run
         :param student_wait_steps: student warmup steps
         :param ema: EMA decay rate of weight average of student
+        :param dropout: per-layer dropout
         """
         super(LightningMPL, self).__init__()
         self.save_hyperparameters()
