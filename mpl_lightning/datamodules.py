@@ -1,3 +1,4 @@
+from argparse import ArgumentParser
 from typing import Optional
 
 import pytorch_lightning as pl
@@ -55,6 +56,19 @@ class TransformMPL(object):
         ori = self.ori(x)
         aug = self.aug(x)
         return self.normalize(ori), self.normalize(aug)
+
+
+def add_data_specific_args(parent_parser: ArgumentParser):
+    parser = parent_parser.add_argument_group("CIFAR_DM")
+    parser.add_argument('--data-path', default='./data', type=str, help='data path')
+    parser.add_argument('--batch-size', default=64, type=int, help='train batch size')
+    parser.add_argument('--num-labeled', type=int, default=4000, help='number of labeled data')
+    parser.add_argument('--mu', default=7, type=int, help='coefficient of unlabeled batch size')
+    parser.add_argument('--resize', default=32, type=int, help='resize image')
+    parser.add_argument("--expand-labels", action="store_true", help="expand labels to fit eval steps")
+    parser.add_argument("--randaug", nargs="+", type=int, help="use it like this. --randaug 2 10")
+    parser.add_argument('--workers', default=4, type=int, help='number of workers')
+    return parent_parser
 
 
 class CIFAR10SSL_DM(pl.LightningDataModule):
