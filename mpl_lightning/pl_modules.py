@@ -8,6 +8,7 @@ from .aux_modules import SmoothCrossEntropy, ModelEMA
 import math
 from torch.optim.lr_scheduler import LambdaLR
 from argparse import ArgumentParser
+import torchmetrics as metrics
 
 
 def get_cosine_schedule_with_warmup(optimizer,
@@ -129,6 +130,15 @@ class LightningMPL(pl.LightningModule):
         self.criterion = self.create_loss_fn()
         # activate manual optimization
         self.automatic_optimization = False
+        # metrics
+        self.train_metrics = nn.ModuleDict({
+            "top1_acc": metrics.Accuracy(top_k=1),
+            "top5_acc": metrics.Accuracy(top_k=5),
+        })
+        self.validation_metrics = nn.ModuleDict({
+            "top1_acc": metrics.Accuracy(top_k=1, compute_on_step=False),
+            "top5_acc": metrics.Accuracy(top_k=5, compute_on_step=False),
+        })
 
     def create_loss_fn(self):
         if self.hparams.label_smoothing > 0:
@@ -226,24 +236,48 @@ class LightningMPL(pl.LightningModule):
         self.manual_backward(t_loss)
         opt_teacher.step()
 
-    def training_step_end(self, _):
+        return {
+            "teacher_loss": t_loss,
+            "student_loss": s_loss,
+            "s_pred_labeled": s_pred_labeled_new,
+            "targets": targets
+        }
+
+    def training_step_end(self, step_outputs):
         if self.enable_student_ema:
             self.avg_student_model.update_parameters(self.student)
+        self.log("teacher_loss", step_outputs["teacher_loss"])
+        self.log("student_loss", step_outputs["student_loss"])
+        s_pred_labeled = step_outputs["s_pred_labeled"]
+        print(s_pred_labeled.device)
+        targets = step_outputs["targets"]
+        print(targets.device)
+        for metric_name in self.train_metrics:
+            metric = self.train_metrics[metric_name]
+            metric(s_pred_labeled, targets)
+            self.log(metric_name, metric)
 
-    # TODO: add metrics
     def validation_step(self, batch, batch_idx):
         eval_model = self.avg_student_model if self.enable_student_ema else self.student
         imgs, targets = batch
         pred = eval_model(imgs)
         loss = self.criterion(pred, targets)
-        acc = accuracy(pred, targets, (1, 5))
-        return loss
+        return {
+            "loss": loss,
+            "preds": pred,
+            "targets": targets
+        }
 
-    # TODO: add metrics
-    def test_step(self, batch, batch_idx):
-        test_model = self.avg_student_model if self.enable_student_ema else self.student
-        imgs, targets = batch
-        pred = test_model(imgs)
-        loss = self.criterion(pred, targets)
-        acc = accuracy(pred, targets, (1, 5))
-        return loss
+    def validation_step_end(self, step_output):
+        loss = step_output["loss"]
+        self.log("val loss", loss, prog_bar=True)
+        preds = step_output["preds"]
+        targets = step_output["targets"]
+        for metric_name in self.validation_metrics:
+            metric = self.train_metrics[metric_name]
+            metric(preds, targets)
+
+    def validation_epoch_end(self, _outputs):
+        for metric_name in self.validation_metrics:
+            metric = self.train_metrics[metric_name]
+            self.log(metric_name, metric.compute())
