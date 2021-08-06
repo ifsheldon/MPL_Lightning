@@ -48,7 +48,6 @@ class LightningMPL(pl.LightningModule):
     @staticmethod
     def add_model_specific_args(parent_parser: ArgumentParser):
         parser = parent_parser.add_argument_group("LightningMPL")
-        parser.add_argument('--num-classes', default=10, type=int, help='number of classes')
         parser.add_argument('--teacher-dropout', default=0, type=float, help='dropout on last dense layer')
         parser.add_argument('--student-dropout', default=0, type=float, help='dropout on last dense layer')
         parser.add_argument('--teacher_lr', default=0.01, type=float, help='train learning rate')
@@ -62,7 +61,6 @@ class LightningMPL(pl.LightningModule):
         parser.add_argument('--uda-steps', default=1, type=float, help='warmup steps of lambda-u')
         parser.add_argument('--label-smoothing', default=0, type=float, help='label smoothing alpha')
         parser.add_argument('--warmup-steps', default=0, type=int, help='warmup steps')
-        parser.add_argument('--total-steps', default=300000, type=int, help='number of total steps to run')
         parser.add_argument('--student-wait-steps', default=0, type=int, help='warmup steps')
         parser.add_argument('--ema', default=0.0, type=float, help="EMA decay rate")
         return parent_parser
@@ -272,7 +270,7 @@ class LightningMPL(pl.LightningModule):
 
     def validation_step_end(self, step_output):
         loss = step_output["loss"]
-        self.log("val loss", loss, prog_bar=True)
+        self.log("val_loss", loss, prog_bar=True)
         preds = step_output["preds"]
         targets = step_output["targets"]
         for metric_name in self.validation_metrics:
