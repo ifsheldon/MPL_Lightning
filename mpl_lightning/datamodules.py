@@ -185,15 +185,15 @@ class CIFAR100SSL_DM(pl.LightningDataModule):
                                                                               self.hparams.resize,
                                                                               self.cifar100_mean,
                                                                               self.cifar100_std))
-        if stage in (None, "test"):
+        if stage in (None, "validate"):
             transform_validation_set = transforms.Compose([
                 transforms.ToTensor(),
                 transforms.Normalize(mean=self.cifar100_mean, std=self.cifar100_std)
             ])
-            self.test_dataset = datasets.CIFAR100(self.hparams.data_path,
-                                                  train=False,
-                                                  transform=transform_validation_set,
-                                                  download=False)
+            self.validation_dataset = datasets.CIFAR100(self.hparams.data_path,
+                                                        train=False,
+                                                        transform=transform_validation_set,
+                                                        download=False)
 
     def train_dataloader(self):
         # FIXME: shuffle?
@@ -207,7 +207,7 @@ class CIFAR100SSL_DM(pl.LightningDataModule):
                                                        drop_last=True)
         return {"labeled": labeled_loader, "unlabeled": unlabeled_loader}
 
-    def test_dataloader(self):
-        return torch.utils.data.DataLoader(self.test_dataset,
+    def val_dataloader(self):
+        return torch.utils.data.DataLoader(self.validation_dataset,
                                            batch_size=self.hparams.labeled_batch_size,
                                            num_workers=self.hparams.workers)
