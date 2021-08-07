@@ -180,10 +180,14 @@ class LightningMPL(pl.LightningModule):
         opt_teacher, opt_student = self.optimizers()
         sch_teacher, sch_student = self.lr_schedulers()
         images_labeled, targets = batch["labeled"]
+        # weak aug: flip + crop
+        # strong aug: flip + crop + UDA augmentations
+        # see datamodules.TransformMPL
         (images_unlabeled_weak_aug, images_unlabeled_strong_aug), _target = batch["unlabeled"]
         targets = targets.long()
         labeled_data_batch_size = images_labeled.shape[0]
         unlabeled_data_batch_size = images_unlabeled_weak_aug.shape[0]
+        # generate predictions of teacher and pseudo labels
         t_all_images = torch.cat([images_labeled, images_unlabeled_weak_aug, images_unlabeled_strong_aug])
         t_all_predictions = self.teacher(t_all_images)
         t_pred_labeled, t_pred_unlabeled_weak_aug, t_pred_unlabeled_strong_aug = torch.split(t_all_predictions,
@@ -191,38 +195,43 @@ class LightningMPL(pl.LightningModule):
                                                                                               unlabeled_data_batch_size,
                                                                                               unlabeled_data_batch_size],
                                                                                              dim=0)
-        t_loss_labeled = self.criterion(t_pred_labeled, targets)
-        soft_pseudo_label = torch.softmax(t_pred_unlabeled_weak_aug.detach() / self.hparams.temperature, dim=-1)
-        max_probs, hard_pseudo_label = torch.max(soft_pseudo_label, dim=-1)
-        mask = max_probs.ge(self.hparams.threshold).float()
-        t_loss_unlabeled = torch.mean(
-            -(soft_pseudo_label * torch.log_softmax(t_pred_unlabeled_strong_aug, dim=-1)).sum(dim=-1) * mask
-        )
-        weight_unlabeled = self.hparams.lambda_u * min(1.0, (self.step + 1) / self.hparams.uda_steps)
-        t_loss_uda = t_loss_labeled + weight_unlabeled * t_loss_unlabeled
-
+        soft_pseudo_label_on_weak_aug_imgs = torch.softmax(
+            t_pred_unlabeled_weak_aug.detach() / self.hparams.temperature, dim=-1)
+        max_probs, hard_pseudo_label_on_weak_aug_imgs = torch.max(soft_pseudo_label_on_weak_aug_imgs, dim=-1)
+        # generate predictions of student on labeled and unlabeled images
         s_all_images = torch.cat([images_labeled, images_unlabeled_strong_aug])
         s_all_predictions = self.student(s_all_images)
         s_pred_labeled, s_pred_unlabeled_strong_aug = torch.split(s_all_predictions,
                                                                   [labeled_data_batch_size, unlabeled_data_batch_size])
 
-        s_loss_labeled_old = F.cross_entropy(s_pred_labeled.detach(), targets)
-        s_loss = self.criterion(s_pred_unlabeled_strong_aug, hard_pseudo_label)
-
+        s_loss_labeled_old = F.cross_entropy(s_pred_labeled.detach(), targets)  # for later use, not in gradient graph
+        s_loss = self.criterion(s_pred_unlabeled_strong_aug, hard_pseudo_label_on_weak_aug_imgs)
+        # update student
         opt_student.zero_grad()
         self.manual_backward(s_loss)
         opt_student.step()
         sch_student.step()
 
+        # calc UDA loss for teacher
+        mask = max_probs.ge(self.hparams.threshold).float()
+        t_loss_unlabeled = torch.mean(
+            -(soft_pseudo_label_on_weak_aug_imgs * torch.log_softmax(t_pred_unlabeled_strong_aug, dim=-1)).sum(
+                dim=-1) * mask
+        )
+        t_loss_labeled = self.criterion(t_pred_labeled, targets)
+        weight_unlabeled = self.hparams.lambda_u * min(1.0, (self.step + 1) / self.hparams.uda_steps)
+        t_loss_uda = t_loss_labeled + weight_unlabeled * t_loss_unlabeled
+        # calc MPL loss for teacher
+        _, hard_pseudo_label_on_strong_aug_imgs = torch.max(t_pred_unlabeled_strong_aug.detach(), dim=-1)
         with torch.no_grad():
             s_pred_labeled_new = self.student(images_labeled)
         s_loss_labeled_new = F.cross_entropy(s_pred_labeled_new.detach(), targets)
         # for `dot_product`, see explanation on https://github.com/google-research/google-research/issues/536
         dot_product = s_loss_labeled_old - s_loss_labeled_new
-        _, hard_pseudo_label = torch.max(t_pred_unlabeled_strong_aug.detach(), dim=-1)
-        t_loss_mpl = dot_product * F.cross_entropy(t_pred_unlabeled_strong_aug, hard_pseudo_label)
+        t_loss_mpl = dot_product * F.cross_entropy(t_pred_unlabeled_strong_aug, hard_pseudo_label_on_strong_aug_imgs)
+        # total loss for teacher
         t_loss = t_loss_uda + t_loss_mpl
-
+        # update teacher
         opt_teacher.zero_grad()
         self.manual_backward(t_loss)
         opt_teacher.step()
