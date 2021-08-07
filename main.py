@@ -1,8 +1,10 @@
-from argparse import ArgumentParser
 import random
+from argparse import ArgumentParser
+
 import numpy as np
-import torch
 import pytorch_lightning as pl
+import torch
+
 import mpl_lightning
 
 
@@ -95,6 +97,7 @@ if __name__ == "__main__":
     data_module = get_datamodule(args)
     model = get_model(args)
     checkpoint_callback = pl.callbacks.ModelCheckpoint(monitor="val/loss", save_top_k=2)
+    print(f"hyperparameters = {args}")
     trainer = pl.Trainer(
         max_steps=args.total_steps,
         val_check_interval=args.eval_step,
