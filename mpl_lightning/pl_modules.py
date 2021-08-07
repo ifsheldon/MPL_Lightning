@@ -1,14 +1,16 @@
-from .aux_modules import WideResNet
+import math
+from argparse import ArgumentParser
+
+import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
-import pytorch_lightning as pl
-from torch import optim
-from torch import nn
-from .aux_modules import SmoothCrossEntropy, ModelEMA
-import math
-from torch.optim.lr_scheduler import LambdaLR
-from argparse import ArgumentParser
 import torchmetrics as metrics
+from torch import nn
+from torch import optim
+from torch.optim.lr_scheduler import LambdaLR
+
+from .aux_modules import SmoothCrossEntropy, ModelEMA
+from .aux_modules import WideResNet
 
 
 def get_cosine_schedule_with_warmup(optimizer,
@@ -186,7 +188,6 @@ class LightningMPL(pl.LightningModule):
     def forward(self, image_batch):
         return self.avg_student_model(image_batch) if self.enable_student_ema else self.student(image_batch)
 
-    # TODO: add metrics
     def training_step(self, batch, batch_idx):
         opt_teacher, opt_student = self.optimizers()
         images_labeled, targets = batch["labeled"]
