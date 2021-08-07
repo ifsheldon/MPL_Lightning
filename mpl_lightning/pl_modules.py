@@ -247,8 +247,8 @@ class LightningMPL(pl.LightningModule):
     def training_step_end(self, step_outputs):
         if self.enable_student_ema:
             self.avg_student_model.update_parameters(self.student)
-        self.log("teacher_loss", step_outputs["teacher_loss"])
-        self.log("student_loss", step_outputs["student_loss"])
+        self.log("teacher_loss", step_outputs["teacher_loss"], prog_bar=True, logger=True)
+        self.log("student_loss", step_outputs["student_loss"], prog_bar=True, logger=True)
         s_pred_labeled = step_outputs["s_pred_labeled"]
         targets = step_outputs["targets"]
         for metric_name in self.train_metrics:
