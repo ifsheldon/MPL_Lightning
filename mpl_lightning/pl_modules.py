@@ -275,10 +275,10 @@ class LightningMPL(pl.LightningModule):
         preds = step_output["preds"]
         targets = step_output["targets"]
         for metric_name in self.validation_metrics:
-            metric = self.train_metrics[metric_name]
+            metric = self.validation_metrics[metric_name]
             metric(preds, targets)
 
     def validation_epoch_end(self, _outputs):
         for metric_name in self.validation_metrics:
-            metric = self.train_metrics[metric_name]
+            metric = self.validation_metrics[metric_name]
             self.log(metric_name, metric.compute())
