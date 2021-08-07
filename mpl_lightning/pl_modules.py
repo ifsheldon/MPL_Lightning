@@ -224,7 +224,8 @@ class LightningMPL(pl.LightningModule):
         self.manual_backward(s_loss)
         opt_student.step()
 
-        s_pred_labeled_new = self.student(images_labeled)
+        with torch.no_grad():
+            s_pred_labeled_new = self.student(images_labeled)
         s_loss_labeled_new = F.cross_entropy(s_pred_labeled_new.detach(), targets)
         # for `dot_product`, see explanation on https://github.com/google-research/google-research/issues/536
         dot_product = s_loss_labeled_old - s_loss_labeled_new
