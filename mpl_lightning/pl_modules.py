@@ -141,6 +141,7 @@ class LightningMPL(pl.LightningModule):
             "top1_acc": metrics.Accuracy(top_k=1, compute_on_step=False),
             "top5_acc": metrics.Accuracy(top_k=5, compute_on_step=False),
         })
+        self.step = 0  # fixme: distributed training problem
 
     def create_loss_fn(self):
         if self.hparams.label_smoothing > 0:
@@ -209,9 +210,7 @@ class LightningMPL(pl.LightningModule):
         t_loss_unlabeled = torch.mean(
             -(soft_pseudo_label * torch.log_softmax(t_pred_unlabeled_strong_aug, dim=-1)).sum(dim=-1) * mask
         )
-        # FIXME: check if below line `batch_idx` is equivalent to
-        #  `weight_u = args.lambda_u * min(1., (step+1) / args.uda_steps)`?
-        weight_unlabeled = self.hparams.lambda_u * min(1.0, (batch_idx + 1) / self.hparams.uda_steps)
+        weight_unlabeled = self.hparams.lambda_u * min(1.0, (self.step + 1) / self.hparams.uda_steps)
         t_loss_uda = t_loss_labeled + weight_unlabeled * t_loss_unlabeled
 
         s_all_images = torch.cat([images_labeled, images_unlabeled_strong_aug])
@@ -249,12 +248,15 @@ class LightningMPL(pl.LightningModule):
             self.avg_student_model.update_parameters(self.student)
         self.log("teacher_loss", step_outputs["teacher_loss"], prog_bar=True, logger=True)
         self.log("student_loss", step_outputs["student_loss"], prog_bar=True, logger=True)
+        self.log("step", self.step, prog_bar=True, logger=False)
         s_pred_labeled = step_outputs["s_pred_labeled"]
         targets = step_outputs["targets"]
         for metric_name in self.train_metrics:
             metric = self.train_metrics[metric_name]
             metric(s_pred_labeled, targets)
             self.log(metric_name, metric)
+
+        self.step += 1
 
     def validation_step(self, batch, batch_idx):
         eval_model = self.avg_student_model if self.enable_student_ema else self.student
