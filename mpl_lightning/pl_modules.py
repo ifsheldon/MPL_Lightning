@@ -250,9 +250,7 @@ class LightningMPL(pl.LightningModule):
         self.log("teacher_loss", step_outputs["teacher_loss"])
         self.log("student_loss", step_outputs["student_loss"])
         s_pred_labeled = step_outputs["s_pred_labeled"]
-        print(s_pred_labeled.device)
         targets = step_outputs["targets"]
-        print(targets.device)
         for metric_name in self.train_metrics:
             metric = self.train_metrics[metric_name]
             metric(s_pred_labeled, targets)

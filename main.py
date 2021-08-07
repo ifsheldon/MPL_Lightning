@@ -97,7 +97,7 @@ if __name__ == "__main__":
     checkpoint_callback = pl.callbacks.ModelCheckpoint(monitor="val_loss", save_top_k=2)
     trainer = pl.Trainer(
         max_steps=args.total_steps,
-        val_check_interval=args.eval_steps,
+        val_check_interval=args.eval_step,
         gpus=args.gpu_num,
         accelerator=None if args.gpu_num == 1 else "ddp",
         gradient_clip_val=args.grad_clip,
