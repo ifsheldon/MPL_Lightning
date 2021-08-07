@@ -183,14 +183,15 @@ class LightningMPL(pl.LightningModule):
                                                       self.hparams.warmup_steps,
                                                       self.hparams.total_steps,
                                                       num_wait_steps=self.hparams.student_wait_steps)
-        return ({"optimizer": t_optimizer, "scheduler": t_scheduler},
-                {"optimizer": s_optimizer, "scheduler": s_scheduler})
+        return ({"optimizer": t_optimizer, "lr_scheduler": t_scheduler},
+                {"optimizer": s_optimizer, "lr_scheduler": s_scheduler})
 
     def forward(self, image_batch):
         return self.avg_student_model(image_batch) if self.enable_student_ema else self.student(image_batch)
 
     def training_step(self, batch, batch_idx):
         opt_teacher, opt_student = self.optimizers()
+        sch_teacher, sch_student = self.lr_schedulers()
         images_labeled, targets = batch["labeled"]
         (images_unlabeled_weak_aug, images_unlabeled_strong_aug), _target = batch["unlabeled"]
         targets = targets.long()
@@ -220,9 +221,11 @@ class LightningMPL(pl.LightningModule):
 
         s_loss_labeled_old = F.cross_entropy(s_pred_labeled.detach(), targets)
         s_loss = self.criterion(s_pred_unlabeled_strong_aug, hard_pseudo_label)
+
         opt_student.zero_grad()
         self.manual_backward(s_loss)
         opt_student.step()
+        sch_student.step()
 
         with torch.no_grad():
             s_pred_labeled_new = self.student(images_labeled)
@@ -236,6 +239,7 @@ class LightningMPL(pl.LightningModule):
         opt_teacher.zero_grad()
         self.manual_backward(t_loss)
         opt_teacher.step()
+        sch_teacher.step()
 
         return {
             "teacher_loss": t_loss.detach(),
