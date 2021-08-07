@@ -1,8 +1,9 @@
+import logging
+from copy import deepcopy
+
 import torch
 import torch.nn.functional as F
 from torch import nn
-from copy import deepcopy
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -69,8 +70,8 @@ class ModelEMA(nn.Module):
     def update_parameters(self, model):
         self._update(model, update_fn=lambda e, m: self.decay * e + (1. - self.decay) * m)
 
-    def state_dict(self):
-        return self.module.state_dict()
+    def state_dict(self, *args, **kwargs):
+        return self.module.state_dict(*args, **kwargs)
 
     def load_state_dict(self, state_dict):
         self.module.load_state_dict(state_dict)
