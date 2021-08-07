@@ -134,14 +134,14 @@ class LightningMPL(pl.LightningModule):
         self.automatic_optimization = False
         # metrics
         self.train_metrics = nn.ModuleDict({
-            "top1_acc": metrics.Accuracy(top_k=1),
-            "top5_acc": metrics.Accuracy(top_k=5),
+            "train/top1_acc": metrics.Accuracy(top_k=1),
+            "train/top5_acc": metrics.Accuracy(top_k=5),
         })
         self.validation_metrics = nn.ModuleDict({
-            "top1_acc": metrics.Accuracy(top_k=1, compute_on_step=False),
-            "top5_acc": metrics.Accuracy(top_k=5, compute_on_step=False),
+            "val/top1_acc": metrics.Accuracy(top_k=1, compute_on_step=False),
+            "val/top5_acc": metrics.Accuracy(top_k=5, compute_on_step=False),
         })
-        self.step = 0  # fixme: distributed training problem
+        self.step = 0  # fixme: distributed training problem?
 
     def create_loss_fn(self):
         if self.hparams.label_smoothing > 0:
@@ -246,8 +246,8 @@ class LightningMPL(pl.LightningModule):
     def training_step_end(self, step_outputs):
         if self.enable_student_ema:
             self.avg_student_model.update_parameters(self.student)
-        self.log("teacher_loss", step_outputs["teacher_loss"], prog_bar=True, logger=True)
-        self.log("student_loss", step_outputs["student_loss"], prog_bar=True, logger=True)
+        self.log("train/teacher_loss", step_outputs["teacher_loss"], prog_bar=True, logger=True)
+        self.log("train/student_loss", step_outputs["student_loss"], prog_bar=True, logger=True)
         self.log("step", self.step, prog_bar=True, logger=False)
         s_pred_labeled = step_outputs["s_pred_labeled"]
         targets = step_outputs["targets"]
@@ -271,7 +271,7 @@ class LightningMPL(pl.LightningModule):
 
     def validation_step_end(self, step_output):
         loss = step_output["loss"]
-        self.log("val_loss", loss, prog_bar=True)
+        self.log("val/loss", loss, prog_bar=True)
         preds = step_output["preds"]
         targets = step_output["targets"]
         for metric_name in self.validation_metrics:
