@@ -94,7 +94,7 @@ if __name__ == "__main__":
     set_seed(args.seed)
     data_module = get_datamodule(args)
     model = get_model(args)
-    checkpoint_callback = pl.callbacks.ModelCheckpoint(monitor="val_loss", save_top_k=2)
+    checkpoint_callback = pl.callbacks.ModelCheckpoint(monitor="val/loss", save_top_k=2)
     trainer = pl.Trainer(
         max_steps=args.total_steps,
         val_check_interval=args.eval_step,
