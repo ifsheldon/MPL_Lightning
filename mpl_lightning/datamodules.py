@@ -1,13 +1,14 @@
+import math
 from argparse import ArgumentParser
 from typing import Optional
 
+import numpy as np
 import pytorch_lightning as pl
 import torch.utils.data
 from torchvision import datasets, transforms
-import numpy as np
-import math
-from .datasets import CIFAR10SSL, CIFAR100SSL
+
 from mpl_lightning.augmentation import RandAugment
+from .datasets import CIFAR10SSL, CIFAR100SSL
 
 
 def x_u_split(labels, num_labeled, num_classes, expand_labels, batch_size, eval_step):
@@ -121,15 +122,15 @@ class CIFAR10SSL_DM(pl.LightningDataModule):
                                                                              self.hparams.resize,
                                                                              CIFAR10SSL_DM.cifar10_mean,
                                                                              CIFAR10SSL_DM.cifar10_std))
-        if stage in (None, "test"):
+        if stage in (None, "validate", "fit"):
             transform_validation_set = transforms.Compose([
                 transforms.ToTensor(),
                 transforms.Normalize(mean=CIFAR10SSL_DM.cifar10_mean, std=CIFAR10SSL_DM.cifar10_std)
             ])
-            self.test_dataset = datasets.CIFAR10(self.hparams.data_path,
-                                                 train=False,
-                                                 transform=transform_validation_set,
-                                                 download=False)
+            self.val_dataset = datasets.CIFAR10(self.hparams.data_path,
+                                                train=False,
+                                                transform=transform_validation_set,
+                                                download=False)
 
     def train_dataloader(self):
         # FIXME: shuffle?
@@ -143,8 +144,8 @@ class CIFAR10SSL_DM(pl.LightningDataModule):
                                                        drop_last=True)
         return {"labeled": labeled_loader, "unlabeled": unlabeled_loader}
 
-    def test_dataloader(self):
-        return torch.utils.data.DataLoader(self.test_dataset,
+    def val_dataloader(self):
+        return torch.utils.data.DataLoader(self.val_dataset,
                                            batch_size=self.hparams.labeled_batch_size,
                                            num_workers=self.hparams.workers)
 
