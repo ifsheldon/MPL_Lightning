@@ -97,6 +97,7 @@ if __name__ == "__main__":
     data_module = get_datamodule(args)
     model = get_model(args)
     checkpoint_callback = pl.callbacks.ModelCheckpoint(monitor="val/loss", save_top_k=2)
+    lr_monitor = pl.callbacks.LearningRateMonitor(logging_interval="step")
     print(f"hyperparameters = {args}")
     trainer = pl.Trainer(
         max_steps=args.total_steps,
@@ -105,6 +106,6 @@ if __name__ == "__main__":
         accelerator=None if args.gpu_num == 1 else "ddp",
         gradient_clip_val=args.grad_clip,
         auto_select_gpus=True,
-        callbacks=[checkpoint_callback]
+        callbacks=[checkpoint_callback, lr_monitor]
     )
     trainer.fit(model, data_module)

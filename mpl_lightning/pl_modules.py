@@ -160,16 +160,18 @@ class LightningMPL(pl.LightningModule):
                                 lr=self.hparams.teacher_lr,
                                 momentum=self.hparams.momentum,
                                 nesterov=self.hparams.enable_nesterov)
-        t_scheduler = get_cosine_schedule_with_warmup(t_optimizer, self.hparams.warmup_steps,
-                                                      self.hparams.total_steps)
+        t_scheduler = {"scheduler": get_cosine_schedule_with_warmup(t_optimizer, self.hparams.warmup_steps,
+                                                                    self.hparams.total_steps),
+                       "name": "teacher_lr"}
         s_optimizer = optim.SGD(student_parameters,
                                 lr=self.hparams.student_lr,
                                 momentum=self.hparams.momentum,
                                 nesterov=self.hparams.enable_nesterov)
-        s_scheduler = get_cosine_schedule_with_warmup(s_optimizer,
-                                                      self.hparams.warmup_steps,
-                                                      self.hparams.total_steps,
-                                                      num_wait_steps=self.hparams.student_wait_steps)
+        s_scheduler = {"scheduler": get_cosine_schedule_with_warmup(s_optimizer,
+                                                                    self.hparams.warmup_steps,
+                                                                    self.hparams.total_steps,
+                                                                    num_wait_steps=self.hparams.student_wait_steps),
+                       "name": "student_lr"}
         return ({"optimizer": t_optimizer, "lr_scheduler": t_scheduler},
                 {"optimizer": s_optimizer, "lr_scheduler": s_scheduler})
 
