@@ -10,7 +10,7 @@ This is intended to be a "minimum viable product" with following features:
     * For more possible training features, please see [MPL-pytorch](https://github.com/kekmodel/MPL-pytorch)
 
 ## Run and train
-To train a CIFAR10 model, run the following
+To train a CIFAR10 model, run the following (Training time: ~2 days with one RTX-A6000)
 ```shell
 python main.py --seed 5 --name cifar10-4K.5 --expand-labels --dataset cifar10 --num-labeled 4000 --total-steps 300000 --eval-step 1000 --randaug 2 16 --batch-size 128 --teacher_lr 0.05 --student_lr 0.05 --weight-decay 5e-4 --ema 0.995 --enable-nesterov --mu 7 --label-smoothing 0.15 --temperature 0.7 --threshold 0.6 --lambda-u 8  --uda-steps 5000  --teacher-dropout 0.2 --student-dropout 0.2 --workers 16
 ```
