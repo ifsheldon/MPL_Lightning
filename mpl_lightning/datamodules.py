@@ -133,7 +133,6 @@ class CIFAR10SSL_DM(pl.LightningDataModule):
                                                 download=False)
 
     def train_dataloader(self):
-        # FIXME: shuffle?
         labeled_loader = torch.utils.data.DataLoader(self.train_labeled_dataset,
                                                      batch_size=self.hparams.labeled_batch_size,
                                                      num_workers=self.hparams.workers,
@@ -211,7 +210,6 @@ class CIFAR100SSL_DM(pl.LightningDataModule):
                                                         download=False)
 
     def train_dataloader(self):
-        # FIXME: shuffle?
         labeled_loader = torch.utils.data.DataLoader(self.train_labeled_dataset,
                                                      batch_size=self.hparams.labeled_batch_size,
                                                      num_workers=self.hparams.workers,
