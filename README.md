@@ -27,9 +27,9 @@ python main.py --seed 5 --name cifar10-4K.5 --expand-labels --dataset cifar10 --
 
 Issues and some details about training in my code:
 
-* It seems some of the training configurations given by MPL-pytorch does not match its published learning curve, see this [issue](https://github.com/kekmodel/MPL-pytorch/issues/20).
+* It seems some of the training configurations given by MPL-pytorch do not match its published learning curve, see this [issue](https://github.com/kekmodel/MPL-pytorch/issues/20).
   * In the case of CIFAR10-4K without finetuning, I followed the setting of 300,000 steps of MPL-pytorch but without `--warmup-steps` and `--student-wait-steps` because after testing they don’t really matter. They will slow down approaching the same validation accuracy, instead, given the same number of training steps. However, `--uda-steps` matters after a bit testing.
-* It seems some of the training configurations given by MPL-pytorch does not match those of the original paper training, see this [issue](https://github.com/kekmodel/MPL-pytorch/issues/15).
+* It seems some of the training configurations given by MPL-pytorch do not match those of the original paper training, see this [issue](https://github.com/kekmodel/MPL-pytorch/issues/15).
   * After inspecting the validation accuracy curve, it seems the model can do better if given more training steps, as the performance is being improved slowly but steadily in the last 100k of 300k steps.
 
 ## TODOs
