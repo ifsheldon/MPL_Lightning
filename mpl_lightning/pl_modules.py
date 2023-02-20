@@ -229,6 +229,7 @@ class LightningMPL(pl.LightningModule):
             s_pred_labeled_new = self.student(images_labeled)
         s_loss_labeled_new = F.cross_entropy(s_pred_labeled_new.detach(), targets)
         # for `dot_product`, see explanation on https://github.com/google-research/google-research/issues/536
+        # for the issue of the sign of `dot_product`, see the tracking issue on https://github.com/kekmodel/MPL-pytorch/issues/6
         dot_product = s_loss_labeled_old - s_loss_labeled_new
         t_loss_mpl = dot_product * F.cross_entropy(t_pred_unlabeled_strong_aug, hard_pseudo_label_on_strong_aug_imgs)
         # total loss for teacher
